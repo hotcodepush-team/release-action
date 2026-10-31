@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint the workflows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 # 1.7.12
+        with:
+          args: -color
+
+  token:
+    name: Check for the token
+    runs-on: ubuntu-latest
+    outputs:
+      present: ${{ steps.token.outputs.present }}
+    steps:
+      - id: token
+        env:
+          PRESENT: ${{ secrets.HOTCODEPUSH_TOKEN != '' }}
+        run: echo "present=$PRESENT" >> "$GITHUB_OUTPUT"
+
+  smoke:
+    name: Dry-run a release against staging
+    needs: token
+    # skipped until the HOTCODEPUSH_TOKEN secret is set, as on pull requests from forks
+    if: needs.token.outputs.present == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+        working-directory: test/app
+      - id: release
+        uses: ./
+        with:
+          dry-run: 'true'
+          path: www
+          working-directory: test/app
+          api-url: https://api.staging.hotcodepush.com
+          cli-version: https://pkg.pr.new/hotcodepush-team/cli/hotcodepush@461a4fa
+          token: ${{ secrets.HOTCODEPUSH_TOKEN }}
+      - env:
+          CHANNEL_ID: ${{ steps.release.outputs.channel-id }}
+        run: test -n "$CHANNEL_ID"
