@@ -1,0 +1,16 @@
+{
+  "name": "release-action",
+  "description": "Release an over-the-air (OTA) update to a channel from CI with the HotCodePush CLI",
+  "version": "0.0.0",
+  "author": "Genz IT Solutions GmbH",
+  "private": true,
+  "homepage": "https://github.com/hotcodepush-team/release-action#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hotcodepush-team/release-action.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hotcodepush-team/release-action/issues"
+  },
+  "license": "MIT"
+}
