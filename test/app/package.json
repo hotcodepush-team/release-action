@@ -1,0 +1,9 @@
+{
+  "name": "release-action-fixture",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The Capacitor app the smoke test releases from",
+  "dependencies": {
+    "@capacitor/core": "8.5.3"
+  }
+}
