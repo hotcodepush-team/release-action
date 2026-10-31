@@ -1,0 +1,261 @@
+name: HotCodePush Release Action
+description: Release an over-the-air (OTA) update to a channel from CI with the HotCodePush CLI
+author: Genz IT Solutions GmbH
+
+branding:
+  icon: upload-cloud
+  color: orange
+
+inputs:
+  channel:
+    description: "The channel, by id or name, one per line or comma-separated; hotcodepush.json's channel by default."
+  path:
+    description: "The build to upload, the framework's build output by default: on React Native and Expo one platform's prepared bundle, Capacitor's webDir or Cordova's www."
+  bundle:
+    description: 'A bundle already uploaded, by number or id; without it the build is uploaded first.'
+  from-channel:
+    description: 'Release what this channel serves, by id or name, instead of a bundle or a build.'
+  bundle-version:
+    description: "The bundle's version label; the project's package.json version by default."
+  platform:
+    description: 'The platforms the bundle serves, `ios,android` by default.'
+  git-sha:
+    description: 'The commit to record, over the detected one.'
+  git-ref:
+    description: 'The branch or tag to record, over the detected one.'
+  git-message:
+    description: 'The commit message subject to record, over the detected one.'
+  no-git:
+    description: 'Detect no git provenance when `true`; the `git-*` inputs still apply.'
+  rollout-percentage:
+    description: "The share of devices the release reaches, 0 to 100; 100 by default, the schedule's first percentage with `progression`."
+  progression:
+    description: 'Widen the rollout step by step while the release stays healthy when `true`: 10, 50 and 100 percent by default, each step after at least an hour and 50 applied updates.'
+  progression-percentages:
+    description: 'The percentages the rollout widens through, rising, the last above the starting rollout, with `progression`; `10,50,100` by default.'
+  progression-minimum-seconds:
+    description: 'The seconds a step lasts at least before the next one, with `progression`; 3600 by default.'
+  progression-minimum-update-count:
+    description: 'The applied updates each step needs before the next one, with `progression`; 50 by default.'
+  mandatory:
+    description: 'Devices apply the release at once and restart when `true`.'
+  notes:
+    description: 'The release notes; they ride the public index.'
+  binary:
+    description: 'The app versions served, a semver range such as `>=2.3.0 <3.0.0`.'
+  os:
+    description: 'The OS versions served, a range such as `>=17`.'
+  attribute:
+    description: 'An attribute the app sets that the device must carry, `key=value`, one per line or comma-separated.'
+  device:
+    description: 'A device the release is limited to, by id, one per line or comma-separated.'
+  failure-action:
+    description: 'What auto-pause does when a release fails too often: `pause`, `revoke`, `notify` or `none`.'
+  failure-threshold:
+    description: 'The failure percentage at which auto-pause acts.'
+  failure-minimum-update-count:
+    description: 'The applied updates a release needs before auto-pause judges it.'
+  dry-run:
+    description: 'Validate and print the audience the release would reach when `true`; nothing is signed, uploaded or published, so no private key is needed.'
+  app:
+    description: 'The app, by id or name, when no hotcodepush.json is found or another app is meant.'
+  organization:
+    description: 'The organization, by id or name, when you belong to several.'
+  config:
+    description: 'The hotcodepush.json to use, when it is not the nearest one up from the working directory.'
+  private-key:
+    description: 'The content of the private key file to sign with, as `signing-key create` wrote it.'
+  api-url:
+    description: 'The API the token belongs to; the production API by default.'
+  working-directory:
+    description: 'The directory the CLI runs in.'
+    default: '.'
+  cli-version:
+    description: 'The HotCodePush CLI version to run, or an npm package spec such as a tarball URL.'
+    default: '0.0.1'
+  token:
+    description: 'The HotCodePush API token.'
+    required: true
+
+outputs:
+  releases:
+    description: 'The JSON the CLI printed: the created releases, or on a dry run the audience per channel.'
+    value: ${{ steps.release.outputs.releases }}
+  release-id:
+    description: 'The id of the first release; empty on a dry run.'
+    value: ${{ steps.release.outputs.release-id }}
+  release-number:
+    description: 'The number of the first release; empty on a dry run.'
+    value: ${{ steps.release.outputs.release-number }}
+  channel-id:
+    description: 'The id of the first channel.'
+    value: ${{ steps.release.outputs.channel-id }}
+  bundle-id:
+    description: 'The id of the bundle the first release carries; empty on a dry run.'
+    value: ${{ steps.release.outputs.bundle-id }}
+  bundle-number:
+    description: 'The number of the bundle the first release carries; empty on a dry run.'
+    value: ${{ steps.release.outputs.bundle-number }}
+  rollout-percentage:
+    description: 'The rollout percentage of the first release; empty on a dry run.'
+    value: ${{ steps.release.outputs.rollout-percentage }}
+
+runs:
+  using: composite
+  steps:
+    - name: Mask secrets
+      shell: bash
+      env:
+        HOTCODEPUSH_TOKEN: ${{ inputs.token }}
+        PRIVATE_KEY: ${{ inputs.private-key }}
+      run: |
+        set -euo pipefail
+        mask() {
+          local line escaped
+          while IFS= read -r line; do
+            if [ -z "$line" ]; then continue; fi
+            escaped="${line//%/%25}"
+            escaped="${escaped//$'\r'/%0D}"
+            echo "::add-mask::$escaped"
+          done <<< "$1"
+        }
+        mask "$HOTCODEPUSH_TOKEN"
+        mask "$PRIVATE_KEY"
+    - name: Release
+      id: release
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        HOTCODEPUSH_TOKEN: ${{ inputs.token }}
+        HOTCODEPUSH_SIGNING_KEY: ${{ inputs.private-key }}
+        HOTCODEPUSH_API_URL: ${{ inputs.api-url }}
+        CI: '1'
+        CLI_VERSION: ${{ inputs.cli-version }}
+        CHANNEL: ${{ inputs.channel }}
+        BUNDLE_PATH: ${{ inputs.path }}
+        BUNDLE: ${{ inputs.bundle }}
+        FROM_CHANNEL: ${{ inputs.from-channel }}
+        BUNDLE_VERSION: ${{ inputs.bundle-version }}
+        PLATFORM: ${{ inputs.platform }}
+        GIT_SHA: ${{ inputs.git-sha }}
+        GIT_REF: ${{ inputs.git-ref }}
+        GIT_MESSAGE: ${{ inputs.git-message }}
+        NO_GIT: ${{ inputs.no-git }}
+        ROLLOUT_PERCENTAGE: ${{ inputs.rollout-percentage }}
+        PROGRESSION: ${{ inputs.progression }}
+        PROGRESSION_PERCENTAGES: ${{ inputs.progression-percentages }}
+        PROGRESSION_MINIMUM_SECONDS: ${{ inputs.progression-minimum-seconds }}
+        PROGRESSION_MINIMUM_UPDATE_COUNT: ${{ inputs.progression-minimum-update-count }}
+        MANDATORY: ${{ inputs.mandatory }}
+        NOTES: ${{ inputs.notes }}
+        BINARY: ${{ inputs.binary }}
+        OS: ${{ inputs.os }}
+        ATTRIBUTE: ${{ inputs.attribute }}
+        DEVICE: ${{ inputs.device }}
+        FAILURE_ACTION: ${{ inputs.failure-action }}
+        FAILURE_THRESHOLD: ${{ inputs.failure-threshold }}
+        FAILURE_MINIMUM_UPDATE_COUNT: ${{ inputs.failure-minimum-update-count }}
+        DRY_RUN: ${{ inputs.dry-run }}
+        APP: ${{ inputs.app }}
+        ORGANIZATION: ${{ inputs.organization }}
+        CONFIG: ${{ inputs.config }}
+      run: |
+        set -euo pipefail
+        split() {
+          local input="$1" item
+          case "$input" in
+            *$'\n'*) : ;;
+            *) input="${input//,/$'\n'}" ;;
+          esac
+          while IFS= read -r item; do
+            item="${item#"${item%%[![:space:]]*}"}"
+            item="${item%"${item##*[![:space:]]}"}"
+            if [ -n "$item" ]; then printf '%s\n' "$item"; fi
+          done <<< "$input"
+        }
+        escape() {
+          local text="${1//%/%25}"
+          text="${text//$'\r'/%0D}"
+          printf '%s' "${text//$'\n'/%0A}"
+        }
+
+        args=(release create --json --yes)
+        while IFS= read -r channel; do args+=(--channel "$channel"); done < <(split "$CHANNEL")
+        if [ -n "$BUNDLE_PATH" ];                      then args+=(--path "$BUNDLE_PATH"); fi
+        if [ -n "$BUNDLE" ];                           then args+=(--bundle "$BUNDLE"); fi
+        if [ -n "$FROM_CHANNEL" ];                     then args+=(--from-channel "$FROM_CHANNEL"); fi
+        if [ -n "$BUNDLE_VERSION" ];                   then args+=(--bundle-version "$BUNDLE_VERSION"); fi
+        if [ -n "$PLATFORM" ];                         then args+=(--platform "$PLATFORM"); fi
+        if [ -n "$GIT_SHA" ];                          then args+=(--git-sha "$GIT_SHA"); fi
+        if [ -n "$GIT_REF" ];                          then args+=(--git-ref "$GIT_REF"); fi
+        if [ -n "$GIT_MESSAGE" ];                      then args+=(--git-message "$GIT_MESSAGE"); fi
+        if [ "$NO_GIT" = "true" ];                     then args+=(--no-git); fi
+        if [ -n "$ROLLOUT_PERCENTAGE" ];               then args+=(--rollout-percentage "$ROLLOUT_PERCENTAGE"); fi
+        if [ "$PROGRESSION" = "true" ];                then args+=(--progression); fi
+        if [ -n "$PROGRESSION_PERCENTAGES" ];          then args+=(--progression-percentages "$PROGRESSION_PERCENTAGES"); fi
+        if [ -n "$PROGRESSION_MINIMUM_SECONDS" ];      then args+=(--progression-minimum-seconds "$PROGRESSION_MINIMUM_SECONDS"); fi
+        if [ -n "$PROGRESSION_MINIMUM_UPDATE_COUNT" ]; then args+=(--progression-minimum-update-count "$PROGRESSION_MINIMUM_UPDATE_COUNT"); fi
+        if [ "$MANDATORY" = "true" ];                  then args+=(--mandatory); fi
+        if [ -n "$NOTES" ];                            then args+=(--notes "$NOTES"); fi
+        if [ -n "$BINARY" ];                           then args+=(--binary "$BINARY"); fi
+        if [ -n "$OS" ];                               then args+=(--os "$OS"); fi
+        while IFS= read -r attribute; do args+=(--attribute "$attribute"); done < <(split "$ATTRIBUTE")
+        while IFS= read -r device; do args+=(--device "$device"); done < <(split "$DEVICE")
+        if [ -n "$FAILURE_ACTION" ];                   then args+=(--failure-action "$FAILURE_ACTION"); fi
+        if [ -n "$FAILURE_THRESHOLD" ];                then args+=(--failure-threshold "$FAILURE_THRESHOLD"); fi
+        if [ -n "$FAILURE_MINIMUM_UPDATE_COUNT" ];     then args+=(--failure-minimum-update-count "$FAILURE_MINIMUM_UPDATE_COUNT"); fi
+        if [ "$DRY_RUN" = "true" ];                    then args+=(--dry-run); fi
+        if [ -n "$APP" ];                              then args+=(--app "$APP"); fi
+        if [ -n "$ORGANIZATION" ];                     then args+=(--organization "$ORGANIZATION"); fi
+        if [ -n "$CONFIG" ];                           then args+=(--config "$CONFIG"); fi
+
+        # a version runs the published package, a spec with a slash (a tarball URL, a git repository) runs that package
+        case "$CLI_VERSION" in
+          */*) cli=(npx -y --package="$CLI_VERSION" hotcodepush) ;;
+          *) cli=(npx -y "hotcodepush@${CLI_VERSION}") ;;
+        esac
+        output_file="$(mktemp)"
+        set +e
+        "${cli[@]}" "${args[@]}" | tee "$output_file"
+        exit_code="${PIPESTATUS[0]}"
+        set -e
+
+        if [ "$exit_code" -ne 0 ]; then
+          if jq -e '.error.code' "$output_file" > /dev/null 2>&1; then
+            code="$(jq -r '.error.code' "$output_file")"
+            message="$(jq -r '[.error.message, .error.fix] | map(select(. != null)) | join(" ")' "$output_file")"
+            echo "::error title=$(escape "$code")::$(escape "$message")"
+          else
+            echo "::error::The HotCodePush CLI exited with code $exit_code."
+          fi
+          exit "$exit_code"
+        fi
+
+        first() { jq -r ".[0].$1 // empty" "$output_file"; }
+        {
+          echo "releases=$(jq -c . "$output_file")"
+          echo "release-id=$(first id)"
+          echo "release-number=$(first number)"
+          echo "channel-id=$(first channelId)"
+          echo "bundle-id=$(first bundleId)"
+          echo "bundle-number=$(first bundle.number)"
+          echo "rollout-percentage=$(first rolloutPercentage)"
+        } >> "$GITHUB_OUTPUT"
+
+        if [ "$DRY_RUN" = "true" ]; then
+          {
+            echo "## HotCodePush dry run"
+            echo
+            echo "| Channel | Reached devices | Active devices | Estimated at the rollout |"
+            echo "| --- | --- | --- | --- |"
+            jq -r '.[] | "| \(.channelId) | \(.reachedDeviceCount) | \(.deviceCount) | \(.estimatedDeviceCount) |"' "$output_file"
+          } >> "$GITHUB_STEP_SUMMARY"
+        else
+          {
+            echo "## HotCodePush release"
+            echo
+            echo "| Channel | Release | Bundle | Rollout | Status |"
+            echo "| --- | --- | --- | --- | --- |"
+            jq -r '.[] | "| \(.channel.name) | #\(.number) | #\(.bundle.number) | \(.rolloutPercentage) % | \(.status) |"' "$output_file"
+          } >> "$GITHUB_STEP_SUMMARY"
+        fi
