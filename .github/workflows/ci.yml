@@ -50,7 +50,7 @@ jobs:
           path: www
           working-directory: test/app
           api-url: https://api.staging.hotcodepush.com
-          cli-version: https://pkg.pr.new/hotcodepush-team/cli/hotcodepush@8380126
+          cli-version: 0.2.0
           token: ${{ secrets.HOTCODEPUSH_TOKEN }}
       - env:
           CHANNEL_ID: ${{ steps.release.outputs.channel-id }}
