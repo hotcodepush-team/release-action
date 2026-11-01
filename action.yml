@@ -72,7 +72,7 @@ inputs:
     default: '.'
   cli-version:
     description: 'The HotCodePush CLI version to run, or an npm package spec such as a tarball URL.'
-    default: '0.0.2'
+    default: '0.1.0'
   token:
     description: 'The HotCodePush API token.'
     required: true
