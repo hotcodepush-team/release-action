@@ -27,11 +27,11 @@ inputs:
     description: 'The commit message subject to record, over the detected one.'
   no-git:
     description: 'Detect no git provenance when `true`; the `git-*` inputs still apply.'
-  rollout-percentage:
+  rollout-percent:
     description: "The share of devices the release reaches, 0 to 100; 100 by default, the schedule's first percentage with `progression`."
   progression:
     description: 'Widen the rollout step by step while the release stays healthy when `true`: 10, 50 and 100 percent by default, each step after at least an hour and 50 applied updates.'
-  progression-percentages:
+  progression-rollout-percents:
     description: 'The percentages the rollout widens through, rising, the last above the starting rollout, with `progression`; `10,50,100` by default.'
   progression-minimum-seconds:
     description: 'The seconds a step lasts at least before the next one, with `progression`; 3600 by default.'
@@ -41,9 +41,9 @@ inputs:
     description: 'Devices apply the release at once and restart when `true`.'
   notes:
     description: 'The release notes; they ride the public index.'
-  binary:
+  binary-version:
     description: 'The app versions served, a semver range such as `>=2.3.0 <3.0.0`.'
-  os:
+  os-version:
     description: 'The OS versions served, a range such as `>=17`.'
   attribute:
     description: 'An attribute the app sets that the device must carry, `key=value`, one per line or comma-separated.'
@@ -51,7 +51,7 @@ inputs:
     description: 'A device the release is limited to, by id, one per line or comma-separated.'
   failure-action:
     description: 'What auto-pause does when a release fails too often: `pause`, `revoke`, `notify` or `none`.'
-  failure-threshold:
+  failure-threshold-percent:
     description: 'The failure percentage at which auto-pause acts.'
   failure-minimum-update-count:
     description: 'The applied updates a release needs before auto-pause judges it.'
@@ -96,9 +96,9 @@ outputs:
   bundle-number:
     description: 'The number of the bundle the first release carries; empty on a dry run.'
     value: ${{ steps.release.outputs.bundle-number }}
-  rollout-percentage:
+  rollout-percent:
     description: 'The rollout percentage of the first release; empty on a dry run.'
-    value: ${{ steps.release.outputs.rollout-percentage }}
+    value: ${{ steps.release.outputs.rollout-percent }}
 
 runs:
   using: composite
@@ -128,7 +128,7 @@ runs:
       env:
         HOTCODEPUSH_TOKEN: ${{ inputs.token }}
         HOTCODEPUSH_SIGNING_KEY: ${{ inputs.private-key }}
-        HOTCODEPUSH_API_URL: ${{ inputs.api-url }}
+        HOTCODEPUSH_API_BASE_URL: ${{ inputs.api-url }}
         CI: '1'
         CLI_VERSION: ${{ inputs.cli-version }}
         CHANNEL: ${{ inputs.channel }}
@@ -141,19 +141,19 @@ runs:
         GIT_REF: ${{ inputs.git-ref }}
         GIT_MESSAGE: ${{ inputs.git-message }}
         NO_GIT: ${{ inputs.no-git }}
-        ROLLOUT_PERCENTAGE: ${{ inputs.rollout-percentage }}
+        ROLLOUT_PERCENT: ${{ inputs.rollout-percent }}
         PROGRESSION: ${{ inputs.progression }}
-        PROGRESSION_PERCENTAGES: ${{ inputs.progression-percentages }}
+        PROGRESSION_ROLLOUT_PERCENTS: ${{ inputs.progression-rollout-percents }}
         PROGRESSION_MINIMUM_SECONDS: ${{ inputs.progression-minimum-seconds }}
         PROGRESSION_MINIMUM_UPDATE_COUNT: ${{ inputs.progression-minimum-update-count }}
         MANDATORY: ${{ inputs.mandatory }}
         NOTES: ${{ inputs.notes }}
-        BINARY: ${{ inputs.binary }}
-        OS: ${{ inputs.os }}
+        BINARY_VERSION: ${{ inputs.binary-version }}
+        OS_VERSION: ${{ inputs.os-version }}
         ATTRIBUTE: ${{ inputs.attribute }}
         DEVICE: ${{ inputs.device }}
         FAILURE_ACTION: ${{ inputs.failure-action }}
-        FAILURE_THRESHOLD: ${{ inputs.failure-threshold }}
+        FAILURE_THRESHOLD_PERCENT: ${{ inputs.failure-threshold-percent }}
         FAILURE_MINIMUM_UPDATE_COUNT: ${{ inputs.failure-minimum-update-count }}
         DRY_RUN: ${{ inputs.dry-run }}
         APP: ${{ inputs.app }}
@@ -190,19 +190,19 @@ runs:
         if [ -n "$GIT_REF" ];                          then args+=(--git-ref "$GIT_REF"); fi
         if [ -n "$GIT_MESSAGE" ];                      then args+=(--git-message "$GIT_MESSAGE"); fi
         if [ "$NO_GIT" = "true" ];                     then args+=(--no-git); fi
-        if [ -n "$ROLLOUT_PERCENTAGE" ];               then args+=(--rollout-percentage "$ROLLOUT_PERCENTAGE"); fi
+        if [ -n "$ROLLOUT_PERCENT" ];                  then args+=(--rollout-percent "$ROLLOUT_PERCENT"); fi
         if [ "$PROGRESSION" = "true" ];                then args+=(--progression); fi
-        if [ -n "$PROGRESSION_PERCENTAGES" ];          then args+=(--progression-percentages "$PROGRESSION_PERCENTAGES"); fi
+        if [ -n "$PROGRESSION_ROLLOUT_PERCENTS" ];     then args+=(--progression-rollout-percents "$PROGRESSION_ROLLOUT_PERCENTS"); fi
         if [ -n "$PROGRESSION_MINIMUM_SECONDS" ];      then args+=(--progression-minimum-seconds "$PROGRESSION_MINIMUM_SECONDS"); fi
         if [ -n "$PROGRESSION_MINIMUM_UPDATE_COUNT" ]; then args+=(--progression-minimum-update-count "$PROGRESSION_MINIMUM_UPDATE_COUNT"); fi
         if [ "$MANDATORY" = "true" ];                  then args+=(--mandatory); fi
         if [ -n "$NOTES" ];                            then args+=(--notes "$NOTES"); fi
-        if [ -n "$BINARY" ];                           then args+=(--binary "$BINARY"); fi
-        if [ -n "$OS" ];                               then args+=(--os "$OS"); fi
+        if [ -n "$BINARY_VERSION" ];                   then args+=(--binary-version "$BINARY_VERSION"); fi
+        if [ -n "$OS_VERSION" ];                       then args+=(--os-version "$OS_VERSION"); fi
         while IFS= read -r attribute; do args+=(--attribute "$attribute"); done < <(split "$ATTRIBUTE")
         while IFS= read -r device; do args+=(--device "$device"); done < <(split "$DEVICE")
         if [ -n "$FAILURE_ACTION" ];                   then args+=(--failure-action "$FAILURE_ACTION"); fi
-        if [ -n "$FAILURE_THRESHOLD" ];                then args+=(--failure-threshold "$FAILURE_THRESHOLD"); fi
+        if [ -n "$FAILURE_THRESHOLD_PERCENT" ];        then args+=(--failure-threshold-percent "$FAILURE_THRESHOLD_PERCENT"); fi
         if [ -n "$FAILURE_MINIMUM_UPDATE_COUNT" ];     then args+=(--failure-minimum-update-count "$FAILURE_MINIMUM_UPDATE_COUNT"); fi
         if [ "$DRY_RUN" = "true" ];                    then args+=(--dry-run); fi
         if [ -n "$APP" ];                              then args+=(--app "$APP"); fi
@@ -239,7 +239,7 @@ runs:
           echo "channel-id=$(first channelId)"
           echo "bundle-id=$(first bundleId)"
           echo "bundle-number=$(first bundle.number)"
-          echo "rollout-percentage=$(first rolloutPercentage)"
+          echo "rollout-percent=$(first rolloutPercent)"
         } >> "$GITHUB_OUTPUT"
 
         if [ "$DRY_RUN" = "true" ]; then
@@ -256,6 +256,6 @@ runs:
             echo
             echo "| Channel | Release | Bundle | Rollout | Status |"
             echo "| --- | --- | --- | --- | --- |"
-            jq -r '.[] | "| \(.channel.name) | #\(.number) | #\(.bundle.number) | \(.rolloutPercentage) % | \(.status) |"' "$output_file"
+            jq -r '.[] | "| \(.channel.name) | #\(.number) | #\(.bundle.number) | \(.rolloutPercent) % | \(.status) |"' "$output_file"
           } >> "$GITHUB_STEP_SUMMARY"
         fi
