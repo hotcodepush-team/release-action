@@ -7,7 +7,7 @@ Release an over-the-air (OTA) update to a channel from GitHub Actions with the [
 [![License](https://img.shields.io/github/license/hotcodepush-team/release-action)](./LICENSE)
 
 > [!NOTE]
-> Store the `token` and the `private-key` as [encrypted secrets](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions), never in the workflow file. Pin the action to a fixed version such as `@v0.1.0`, since no moving major tag is kept. <!-- x-release-please-version -->
+> Store the `token` and the `private-key` as [encrypted secrets](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions), never in the workflow file. Pin the action to a fixed version such as `@v0.2.0`, since no moving major tag is kept. <!-- x-release-please-version -->
 
 ## Usage
 
@@ -29,7 +29,7 @@ jobs:
         with:
           node-version: 22
       - run: npm ci && npm run build
-      - uses: hotcodepush-team/release-action@v0.1.0 # x-release-please-version
+      - uses: hotcodepush-team/release-action@v0.2.0 # x-release-please-version
         with:
           token: ${{ secrets.HOTCODEPUSH_TOKEN }}
           private-key: ${{ secrets.HOTCODEPUSH_SIGNING_KEY }}
@@ -39,7 +39,7 @@ jobs:
 Every input:
 
 ```yaml
-- uses: hotcodepush-team/release-action@v0.1.0 # x-release-please-version
+- uses: hotcodepush-team/release-action@v0.2.0 # x-release-please-version
   with:
     # The channel, by id or name, one per line or comma-separated; hotcodepush.json's channel by default.
     channel: ''
