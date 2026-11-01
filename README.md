@@ -62,11 +62,11 @@ Every input:
     # Detect no git provenance when `true`; the `git-*` inputs still apply.
     no-git: ''
     # The share of devices the release reaches, 0 to 100; 100 by default, the schedule's first percentage with `progression`.
-    rollout-percentage: ''
+    rollout-percent: ''
     # Widen the rollout step by step while the release stays healthy when `true`: 10, 50 and 100 percent by default, each step after at least an hour and 50 applied updates.
     progression: ''
     # The percentages the rollout widens through, rising, the last above the starting rollout, with `progression`; `10,50,100` by default.
-    progression-percentages: ''
+    progression-rollout-percents: ''
     # The seconds a step lasts at least before the next one, with `progression`; 3600 by default.
     progression-minimum-seconds: ''
     # The applied updates each step needs before the next one, with `progression`; 50 by default.
@@ -76,9 +76,9 @@ Every input:
     # The release notes; they ride the public index.
     notes: ''
     # The app versions served, a semver range such as `>=2.3.0 <3.0.0`.
-    binary: ''
+    binary-version: ''
     # The OS versions served, a range such as `>=17`.
-    os: ''
+    os-version: ''
     # An attribute the app sets that the device must carry, `key=value`, one per line or comma-separated.
     attribute: ''
     # A device the release is limited to, by id, one per line or comma-separated.
@@ -86,7 +86,7 @@ Every input:
     # What auto-pause does when a release fails too often: `pause`, `revoke`, `notify` or `none`.
     failure-action: ''
     # The failure percentage at which auto-pause acts.
-    failure-threshold: ''
+    failure-threshold-percent: ''
     # The applied updates a release needs before auto-pause judges it.
     failure-minimum-update-count: ''
     # Validate and print the audience the release would reach when `true`; nothing is signed, uploaded or published, so no private key is needed.
@@ -122,7 +122,7 @@ Every input:
 | `channel-id` | The id of the first channel. |
 | `bundle-id` | The id of the bundle the first release carries; empty on a dry run. |
 | `bundle-number` | The number of the bundle the first release carries; empty on a dry run. |
-| `rollout-percentage` | The rollout percentage of the first release; empty on a dry run. |
+| `rollout-percent` | The rollout percentage of the first release; empty on a dry run. |
 
 ## Notes
 
