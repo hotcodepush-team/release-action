@@ -19,7 +19,7 @@ Rules for changing it:
 
 ## Releases
 
-- Conventional Commits. release-please (`.github/workflows/release.yml`) keeps a release PR open on `main`. Merging it bumps `package.json`, writes `CHANGELOG.md`, tags and creates the GitHub release. Pre-1.0, `feat:` bumps the patch and a breaking change the minor.
+- release-please (`.github/workflows/release.yml`) keeps a release PR open on `main`. Merging it bumps `package.json`, writes `CHANGELOG.md`, tags and creates the GitHub release. Pre-1.0, `feat:` bumps the patch and a breaking change the minor.
 - The `@v<version>` references in `README.md` carry `x-release-please-version`, so the release PR bumps them. Never edit them by hand.
 - The Marketplace listing is manual: after merging the release PR, edit the release on GitHub and tick **Publish this Action to the GitHub Marketplace** (needs 2FA). The API release-please uses cannot set it.
 - When the CLI releases, bump `cli-version`'s default in `action.yml` and the README's input list.
@@ -28,3 +28,13 @@ Rules for changing it:
 
 `.github/workflows/ci.yml` lints the workflows with actionlint and dry-runs a release of `test/app` against the staging API.
 The dry run needs the `HOTCODEPUSH_TOKEN` secret and is skipped without it. `test/app/hotcodepush.json` must name an app the token can see.
+
+- A test earns its place by catching a bug nothing else catches, at the lowest layer that can prove it; one test per branch, never per value, and nothing for what the types, the framework or a library guarantee.
+- A new test names the behaviour or the bug it proves; if deleting the production code would not fail it, it does not get in.
+
+## Agent workspace
+
+- No `.mcp.json`: no server covers this repo's stack yet; the HotCodePush server joins when it exists.
+- `.claude/skills/` holds the developer skills copied from `hotcodepush-team/.github` with the skills CLI and pinned in `skills-lock.json`; update them with `npx skills update`.
+- `.github/copilot-instructions.md` holds the review criteria, the only Copilot-specific file.
+- Commits are conventional commits; `main` is trunk, CI is the gate, and a commit that lands an issue says `Closes #<n>`.
