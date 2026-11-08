@@ -8,7 +8,7 @@ branding:
 
 inputs:
   channel:
-    description: "The channel, by id or name, one per line or comma-separated; hotcodepush.json's channel by default."
+    description: "The channel, by id or name; hotcodepush.json's channel by default."
   path:
     description: "The build to upload, the framework's build output by default: on React Native and Expo one platform's prepared bundle, Capacitor's webDir or Cordova's www."
   bundle:
@@ -18,7 +18,7 @@ inputs:
   bundle-version:
     description: "The bundle's version label; the project's package.json version by default."
   platform:
-    description: 'The platforms the bundle serves, `ios,android` by default.'
+    description: 'The platform the bundle serves, `ios` or `android`. Required on React Native and Expo unless `bundle` is set, since one run makes one release of one platform there. On Capacitor and Cordova it narrows the bundle, which serves both by default.'
   git-sha:
     description: 'The commit to record, over the detected one.'
   git-ref:
@@ -72,32 +72,32 @@ inputs:
     default: '.'
   cli-version:
     description: 'The HotCodePush CLI version to run, or an npm package spec such as a tarball URL.'
-    default: '0.2.5'
+    default: '0.3.0'
   token:
     description: 'The HotCodePush API token.'
     required: true
 
 outputs:
-  releases:
-    description: 'The JSON the CLI printed: the created releases, or on a dry run the audience per channel.'
-    value: ${{ steps.release.outputs.releases }}
+  release:
+    description: "The JSON the CLI printed: the created release, or on a dry run the channel's audience."
+    value: ${{ steps.release.outputs.release }}
   release-id:
-    description: 'The id of the first release; empty on a dry run.'
+    description: 'The id of the release; empty on a dry run.'
     value: ${{ steps.release.outputs.release-id }}
   release-number:
-    description: 'The number of the first release; empty on a dry run.'
+    description: 'The number of the release; empty on a dry run.'
     value: ${{ steps.release.outputs.release-number }}
   channel-id:
-    description: 'The id of the first channel.'
+    description: 'The id of the channel.'
     value: ${{ steps.release.outputs.channel-id }}
   bundle-id:
-    description: 'The id of the bundle the first release carries; empty on a dry run.'
+    description: 'The id of the bundle the release carries; empty on a dry run.'
     value: ${{ steps.release.outputs.bundle-id }}
   bundle-number:
-    description: 'The number of the bundle the first release carries; empty on a dry run.'
+    description: 'The number of the bundle the release carries; empty on a dry run.'
     value: ${{ steps.release.outputs.bundle-number }}
   rollout-percent:
-    description: 'The rollout percentage of the first release; empty on a dry run.'
+    description: 'The rollout percentage of the release; empty on a dry run.'
     value: ${{ steps.release.outputs.rollout-percent }}
 
 runs:
@@ -180,7 +180,7 @@ runs:
         }
 
         args=(release create --json --yes)
-        while IFS= read -r channel; do args+=(--channel "$channel"); done < <(split "$CHANNEL")
+        if [ -n "$CHANNEL" ];                          then args+=(--channel "$CHANNEL"); fi
         if [ -n "$BUNDLE_PATH" ];                      then args+=(--path "$BUNDLE_PATH"); fi
         if [ -n "$BUNDLE" ];                           then args+=(--bundle "$BUNDLE"); fi
         if [ -n "$FROM_CHANNEL" ];                     then args+=(--from-channel "$FROM_CHANNEL"); fi
@@ -231,15 +231,15 @@ runs:
           exit "$exit_code"
         fi
 
-        first() { jq -r ".[0].$1 // empty" "$output_file"; }
+        field() { jq -r ".$1 // empty" "$output_file"; }
         {
-          echo "releases=$(jq -c . "$output_file")"
-          echo "release-id=$(first id)"
-          echo "release-number=$(first number)"
-          echo "channel-id=$(first channelId)"
-          echo "bundle-id=$(first bundleId)"
-          echo "bundle-number=$(first bundle.number)"
-          echo "rollout-percent=$(first rolloutPercent)"
+          echo "release=$(jq -c . "$output_file")"
+          echo "release-id=$(field id)"
+          echo "release-number=$(field number)"
+          echo "channel-id=$(field channelId)"
+          echo "bundle-id=$(field bundleId)"
+          echo "bundle-number=$(field bundle.number)"
+          echo "rollout-percent=$(field rolloutPercent)"
         } >> "$GITHUB_OUTPUT"
 
         if [ "$DRY_RUN" = "true" ]; then
@@ -248,7 +248,7 @@ runs:
             echo
             echo "| Channel | Reached devices | Active devices | Estimated at the rollout |"
             echo "| --- | --- | --- | --- |"
-            jq -r '.[] | "| \(.channelId) | \(.reachedDeviceCount) | \(.deviceCount) | \(.estimatedDeviceCount) |"' "$output_file"
+            jq -r '"| \(.channelId) | \(.reachedDeviceCount) | \(.deviceCount) | \(.estimatedDeviceCount) |"' "$output_file"
           } >> "$GITHUB_STEP_SUMMARY"
         else
           {
@@ -256,6 +256,6 @@ runs:
             echo
             echo "| Channel | Release | Bundle | Rollout | Status |"
             echo "| --- | --- | --- | --- | --- |"
-            jq -r '.[] | "| \(.channel.name) | #\(.number) | #\(.bundle.number) | \(.rolloutPercent) % | \(.status) |"' "$output_file"
+            jq -r '"| \(.channel.name) | #\(.number) | #\(.bundle.number) | \(.rolloutPercent) % | \(.status) |"' "$output_file"
           } >> "$GITHUB_STEP_SUMMARY"
         fi

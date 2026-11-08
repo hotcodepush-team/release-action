@@ -36,12 +36,37 @@ jobs:
           channel: production
 ```
 
+On React Native and Expo a bundle serves one platform, so run the action once per platform, here as a matrix:
+
+```yaml
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [ios, android]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+      - uses: hotcodepush-team/release-action@v0.2.0 # x-release-please-version
+        with:
+          token: ${{ secrets.HOTCODEPUSH_TOKEN }}
+          private-key: ${{ secrets.HOTCODEPUSH_SIGNING_KEY }}
+          channel: production
+          platform: ${{ matrix.platform }}
+```
+
+Two steps in one job, one with `platform: ios` and one with `platform: android`, work the same way.
+
 Every input:
 
 ```yaml
 - uses: hotcodepush-team/release-action@v0.2.0 # x-release-please-version
   with:
-    # The channel, by id or name, one per line or comma-separated; hotcodepush.json's channel by default.
+    # The channel, by id or name; hotcodepush.json's channel by default.
     channel: ''
     # The build to upload, the framework's build output by default: on React Native and Expo one platform's prepared bundle, Capacitor's webDir or Cordova's www.
     path: ''
@@ -51,7 +76,7 @@ Every input:
     from-channel: ''
     # The bundle's version label; the project's package.json version by default.
     bundle-version: ''
-    # The platforms the bundle serves, `ios,android` by default.
+    # The platform the bundle serves, `ios` or `android`. Required on React Native and Expo unless `bundle` is set, since one run makes one release of one platform there. On Capacitor and Cordova it narrows the bundle, which serves both by default.
     platform: ''
     # The commit to record, over the detected one.
     git-sha: ''
@@ -105,7 +130,7 @@ Every input:
     # Default: `.`.
     working-directory: ''
     # The HotCodePush CLI version to run, or an npm package spec such as a tarball URL.
-    # Default: `0.2.5`.
+    # Default: `0.3.0`.
     cli-version: ''
     # The HotCodePush API token.
     # Required.
@@ -116,23 +141,25 @@ Every input:
 
 | Name | Description |
 | --- | --- |
-| `releases` | The JSON the CLI printed: the created releases, or on a dry run the audience per channel. |
-| `release-id` | The id of the first release; empty on a dry run. |
-| `release-number` | The number of the first release; empty on a dry run. |
-| `channel-id` | The id of the first channel. |
-| `bundle-id` | The id of the bundle the first release carries; empty on a dry run. |
-| `bundle-number` | The number of the bundle the first release carries; empty on a dry run. |
-| `rollout-percent` | The rollout percentage of the first release; empty on a dry run. |
+| `release` | The JSON the CLI printed: the created release, or on a dry run the channel's audience. |
+| `release-id` | The id of the release; empty on a dry run. |
+| `release-number` | The number of the release; empty on a dry run. |
+| `channel-id` | The id of the channel. |
+| `bundle-id` | The id of the bundle the release carries; empty on a dry run. |
+| `bundle-number` | The number of the bundle the release carries; empty on a dry run. |
+| `rollout-percent` | The rollout percentage of the release; empty on a dry run. |
 
 ## Notes
 
 - The runner needs Node.js 22 or later. The action runs the CLI with `npx`, so add `actions/setup-node` where the runner has an older Node.js.
 - The action reads the CLI's JSON with `jq`, which GitHub-hosted runners have preinstalled. Install it on a self-hosted runner.
-- `channel`, `attribute` and `device` take several values, one per line or comma-separated on one line. When a value contains a comma, use one line per value.
+- One run makes one release on one channel. To release the same bundle to a second channel, run the action again with `bundle` set to the first release's `bundle-number`, which uploads nothing.
+- On React Native and Expo, `platform` is required unless `bundle` is set, since a bundle there already serves one platform. Without it the CLI fails with `missing_parameter`.
+- `attribute` and `device` take several values, one per line or comma-separated on one line. When a value contains a comma, use one line per value.
 - A dry run (`dry-run: 'true'`) signs, uploads and publishes nothing, so it needs no `private-key`. Use it on pull requests to check the release and see the audience it would reach.
 - The bundle's version label is the project's `package.json` version by default. Set `bundle-version: ${{ github.sha }}` to label each bundle with its commit instead.
 - `cli-version` takes a CLI version or any npm package spec, such as a tarball URL.
-- The action writes a job summary with a row per release, or per channel on a dry run.
+- The action writes a job summary with the release, or with the channel's audience on a dry run.
 - When the CLI fails, the action annotates the run with the CLI's error code, message and fix, and exits with the CLI's exit code.
 
 ## Documentation
