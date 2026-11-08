@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0](https://github.com/hotcodepush-team/release-action/compare/v0.2.0...v0.3.0) (2026-11-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* one release per run, a single channel and platform, CLI 0.3.0 ([#11](https://github.com/hotcodepush-team/release-action/issues/11))
+
+### Features
+
+* one release per run, a single channel and platform, CLI 0.3.0 ([#11](https://github.com/hotcodepush-team/release-action/issues/11)) ([bf31050](https://github.com/hotcodepush-team/release-action/commit/bf31050091950427f7346aa0177222456301482d))
+
 ## [0.2.0](https://github.com/hotcodepush-team/release-action/compare/v0.1.0...v0.2.0) (2026-11-01)
 
 
