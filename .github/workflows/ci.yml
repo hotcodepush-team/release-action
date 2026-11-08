@@ -54,3 +54,6 @@ jobs:
       - env:
           CHANNEL_ID: ${{ steps.release.outputs.channel-id }}
         run: test -n "$CHANNEL_ID"
+      - env:
+          RELEASE: ${{ steps.release.outputs.release }}
+        run: jq -e .channelId <<< "$RELEASE"

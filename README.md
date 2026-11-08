@@ -36,7 +36,7 @@ jobs:
           channel: production
 ```
 
-On React Native and Expo a bundle serves one platform, so run the action once per platform, here as a matrix:
+On React Native and Expo one run makes one release of one platform, so run the action once per platform, here as a matrix:
 
 ```yaml
 jobs:
@@ -59,7 +59,7 @@ jobs:
           platform: ${{ matrix.platform }}
 ```
 
-Two steps in one job, one with `platform: ios` and one with `platform: android`, work the same way.
+Two steps in one job, one with `platform: ios` and one with `platform: android`, work the same way. Give each step its own `id` to read its outputs.
 
 Every input:
 
@@ -154,7 +154,7 @@ Every input:
 - The runner needs Node.js 22 or later. The action runs the CLI with `npx`, so add `actions/setup-node` where the runner has an older Node.js.
 - The action reads the CLI's JSON with `jq`, which GitHub-hosted runners have preinstalled. Install it on a self-hosted runner.
 - One run makes one release on one channel. To release the same bundle to a second channel, run the action again with `bundle` set to the first release's `bundle-number`, which uploads nothing.
-- On React Native and Expo, `platform` is required unless `bundle` is set, since a bundle there already serves one platform. Without it the CLI fails with `missing_parameter`.
+- On React Native and Expo, `platform` is required unless `bundle` is set, since one run makes one release of one platform there. Without it the CLI fails with `missing_parameter`.
 - `attribute` and `device` take several values, one per line or comma-separated on one line. When a value contains a comma, use one line per value.
 - A dry run (`dry-run: 'true'`) signs, uploads and publishes nothing, so it needs no `private-key`. Use it on pull requests to check the release and see the audience it would reach.
 - The bundle's version label is the project's `package.json` version by default. Set `bundle-version: ${{ github.sha }}` to label each bundle with its commit instead.
