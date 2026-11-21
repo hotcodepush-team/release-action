@@ -130,7 +130,7 @@ Every input:
     # Default: `.`.
     working-directory: ''
     # The HotCodePush CLI version to run, or an npm package spec such as a tarball URL.
-    # Default: `0.3.0`.
+    # Default: `0.4.1`.
     cli-version: ''
     # The HotCodePush API token.
     # Required.
