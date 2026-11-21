@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/hotcodepush-team/release-action/compare/v0.3.0...v0.3.1) (2026-11-21)
+
+
+### Features
+
+* run the CLI 0.4.1 by default ([#13](https://github.com/hotcodepush-team/release-action/issues/13)) ([5df2e9e](https://github.com/hotcodepush-team/release-action/commit/5df2e9e41fa85dd930bc9f4eb54ab95a047da0a8))
+
 ## [0.3.0](https://github.com/hotcodepush-team/release-action/compare/v0.2.0...v0.3.0) (2026-11-08)
 
 
